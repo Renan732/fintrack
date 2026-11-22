@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+  goals        Goal[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "INCOME" ou "EXPENSE"
+  color     String   @default("#10b981")
+  icon      String   @default("tag")
+  createdAt DateTime @default(now())
+
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name, type])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  title     String
+  amount    Float
+  type      String   // "INCOME" ou "EXPENSE"
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  limitAmount Float
+  month       Int      // 1 a 12
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, month, year])
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  title         String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime?
+  color         String    @default("#10b981")
+  icon          String    @default("piggy-bank")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
